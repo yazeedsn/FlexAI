@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="flexai"
+description="A high-level deep learning package built on-top of pytorch. Embracing flexibility and ease of use."
+version="0.0.1"
+dependencies = [
+    "torch",
+    "numpy",
+    "matplotlib",
+]
+
+authors = [{name = "Yazeed Abusultan", email = "yazeedsn153@outlook.com"}]
+readme = "README.md"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+]
