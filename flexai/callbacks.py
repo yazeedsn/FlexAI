@@ -176,7 +176,7 @@ class LSUVCB(Callback):
             h = m.register_forward_hook(self._stats_hook)
             with torch.no_grad():
                 i = 0
-                while learner.model(xb) is not None and (abs(self.mean) > 1e-3 or abs(self.std-1) > 1e-3):
+                while learner.model(xb.to(learner.device)) is not None and (abs(self.mean) > 1e-3 or abs(self.std-1) > 1e-3):
                     m.weight.data /= self.std
                     if m.bias is not None: m.bias -= self.mean
                     elif abs(self.mean) > 1e-3: break

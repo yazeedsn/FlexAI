@@ -1,10 +1,11 @@
 class Learner():
-    def __init__(self, model, dataloaders, optimizer, metrics, cbs=None):
-        self.model = model
+    def __init__(self, model, dataloaders, optimizer, metrics, cbs=None, device='cpu'):
+        self.model = model.to(device)
         self.dataloaders = dataloaders
         self.optimizer = optimizer
         self.metrics = metrics
         self.cbs = cbs
+        self.device=device
         self._epoch = 1
         self._keep_fit = True
         self._runCBS('on_init')
@@ -27,6 +28,8 @@ class Learner():
                     self.model.eval()
                 self._runCBS('before_epoch', phase)
                 for X, y in self.dataloaders[phase]:
+                    X = X.to(self.device)
+                    y = y.to(self.device)
                     self._runCBS('before_batch', phase, [X, y])
                     output = self.model(X)
                     loss = self.metrics['loss'](output, y)
