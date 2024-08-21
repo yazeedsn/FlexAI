@@ -16,7 +16,7 @@ class ActivationStatsManger():
             if module.training:
                 getattr(module, self.attr_name)['mean'].append(output.mean().item())
                 getattr(module, self.attr_name)['std'].append(output.std().item())
-                getattr(module, self.attr_name)['histc'].append(output.abs().histc(40, 0, 10))
+                getattr(module, self.attr_name)['histc'].append(output.abs().histc(40, 0, 10).detach().cpu().numpy())
 
     def get_stat(self, stat_name):
         stat = {}
