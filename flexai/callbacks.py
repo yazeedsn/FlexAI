@@ -8,10 +8,22 @@ from math import ceil
 
 
 class Callback():
+
+    #TODO Add a priority mechnism for ordering callbacks
     def __init__(self):
         pass
     
 class RecordMetricsCB(Callback):
+    """
+    A callback that records the evaluted values of the learner metrics after each batch in the form of lists.
+    
+    Args
+    ----
+    metrics: list | None
+        A list of the metrics to be recorded, if None all the metrics are recorded. (default: None)
+    hist: dict [str, list]
+        A dictonary of each metric values as a list mapped to the metric name.
+    """
     def __init__(self, metrics=None):
         super().__init__()
         self.metrics = metrics
@@ -31,6 +43,9 @@ class RecordMetricsCB(Callback):
 
 
 class LoggerCB(RecordMetricsCB):
+    """
+    A callback that prints the average of each metric values after every epcoh during fitting.
+    """
     def __init__(self):
         super().__init__()
 
@@ -47,6 +62,14 @@ class LoggerCB(RecordMetricsCB):
 
 
 class ForwardHookCB(Callback):
+    """
+    A callback to register a forward hook to the model.
+
+    Args
+    ----
+    hook: Callable
+        The function that will be registered as a forward hook to every module in the learner's model.
+    """
     def __init__(self, hook):
         super().__init__()
         self.hook = hook
@@ -63,6 +86,14 @@ class ForwardHookCB(Callback):
 
 
 class MetricPlotterCB(RecordMetricsCB):
+    """
+    A callback that plots the history of the learner's metrics values.
+
+    Args
+    ----
+    clear_hist: bool
+        if Ture, clear the metrics history after plotting. (default: False) 
+    """
     def __init__(self, clear_hist=False, **plt_kw):
         super().__init__()
         self.clear_hist = clear_hist
@@ -89,6 +120,20 @@ class MetricPlotterCB(RecordMetricsCB):
         if self.clear_hist: self.clear()
 
 class TransformCB(Callback):
+    """
+    A callback that applies a transform to a batch before fitting.
+    
+    Args
+    ----
+    transform: Callable | None
+        The transform that will be applied to the model input. It must return the transformed input. (default: None)
+    target_transform: Callable | None
+        The transform that will be applied to the targets. It must return the transformed targets. (default: None)
+    phase: str | None
+        Specifies the phase at which the transformattion will be applied. if 'train', the transformattion will
+        only be applied on the training phase. if 'valid', the transformattion will only be applied on the
+        validation phase. if None the transformattion will be done at both phases. (default: None)
+    """
     def __init__(self, transform=None, target_transform=None, phase=None):
         super(TransformCB, self).__init__()
         self.transform = transform
@@ -101,6 +146,15 @@ class TransformCB(Callback):
             batch[1] = self.target_transform(batch[1]) if self.target_transform else batch[1]
 
 class LRSchedulerCB(Callback):
+    """
+    A callback that adds a learning rate scheduler to the training process. It will call 
+    scheduler.step() after every batch
+
+    Args
+    ----
+    scheduler: Any
+        The scheduler that will update the learning rate.
+    """
     def __init__(self, scheduler):
         super(LRSchedulerCB, self).__init__()
         self.scheduler = scheduler
@@ -111,6 +165,25 @@ class LRSchedulerCB(Callback):
 
 
 class LRFinderCB(Callback):
+    """
+    A callback that is used to find a suitable learning rate. It will draw a plot of the relation
+    between learner.metrics['loss'] and the learning rate.
+
+    Args
+    ----
+    lr_scheduler: Any
+        The shceduler used to update the learning rate.
+    start_lr: float
+        The learning rate used at the start of the training. (default: 1e-5)
+    max_lr: float
+        If lr exceeds it, the fitting will be stopped. (default: 10)
+    smooth_f: float
+        A factor that smooths the plot. (default: 0.05)
+    break_f: float
+        If current loss exceeds minimum loss by break_f stop fitting. minimum loss > (break_f * current_loss). (default: 3)
+    xscale: str
+        The scale for matplotlib fig x_axis. Check matplotlib documentation for possible options. (default: 'log')
+    """
     def __init__(self, lr_scheduler, start_lr=1e-5, max_lr=10, smooth_f=0.05, break_f=3, xscale='log'):
         super(LRFinderCB, self).__init__()
         self.lr_scheduler = lr_scheduler
@@ -161,9 +234,22 @@ class LRFinderCB(Callback):
 
 
 class LSUVCB(Callback):
-    def __init__(self, max_iter= 100, verbose=False):
+    """
+    A callback that initializes the learner's model weights using the Layer-Sequential Unit-Variance
+    (LSUV) method.
+
+    Args
+    ----
+    filter: list['str']
+        List of all the names of the layer types to apply the initializtion on. (default: ['Linear', 'Conv2d'])
+    max_iter: int
+        The max number of iterations a layers weights are updated before convergence. (default: 100)
+    verbose: bool
+        If true, prints each layer that it's initializing. (default: False)
+    """
+    def __init__(self, filter=['Conv2d', 'Linear'], max_iter=100, verbose=False):
         super(LSUVCB, self).__init__()
-        self.filter = ['Conv2d', 'Linear']
+        self.filter = filter
         self.max_iter = max_iter
         self.verbose = verbose
 

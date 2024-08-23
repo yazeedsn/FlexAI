@@ -1,10 +1,35 @@
 class Learner():
-    def __init__(self, model, dataloaders, optimizer, metrics, cbs=None, device='cpu'):
+    """
+    A class that handles the training of a pytorch model with the specified parameters.
+
+    Args
+    ----
+        model: torch.nn.Module 
+            The model that needs to be trained.
+        dataloaders: Mapping [str, torch.utils.data.DataLoader]
+            A dictonary containing a dataloader assigned to 'train', and optionally a 'valid' dataloaders.
+        optimizer: Any
+            A proper pytorch or pytorch like optimizer used in the model training.
+        metrics: Mapping [str, Callable]
+            A mapping of all the metrics to that need to be calculated. must contain 'loss' key specifying 
+            the loss function that the model will be trained upon.
+        callbacks: list [Callback] | None
+            A list of all the callbacks that needs to be called. (default: None)
+        device: str
+            The device that will be used during training/validation.'cpu' to specify the cpu, 'cuda' to 
+            use cuda. default('cpu')
+    
+    """
+    
+    def __init__(self, model, dataloaders, optimizer, metrics, callbacks=None, device='cpu'):
+        """
+        Constructs a learner with the intended training attributes.
+        """
         self.model = model.to(device)
         self.dataloaders = dataloaders
         self.optimizer = optimizer
         self.metrics = metrics
-        self.cbs = cbs
+        self.cbs = callbacks
         self.device=device
         self._epoch = 1
         self._keep_fit = True
@@ -14,7 +39,16 @@ class Learner():
     def epoch(self):
         return self._epoch
     
-    def fit(self, epochs, train=True, valid=True, transform=None, target_transform=None):
+    def fit(self, epochs, train=True, valid=True):
+        """
+        Trains/Validates a model for a number of epochs.
+
+        Parameters
+        ----------
+            epochs (int): The number of epochs to train/validate.
+            train (bool): If true, the model will be trained on dataloaders['train'], otherwise the model will not be trained.
+            valid (bool): If true, the model will be evaluated on dataloaders['valid'], otherwise the model will not be evaluated.
+        """
         phases = []
         if train: phases.append('train')
         if valid: phases.append('valid')
@@ -48,6 +82,7 @@ class Learner():
         self._runCBS('after_fit')
     
     def stop_fit_request(self):
+        """Sends a request to the learner to stop it's fitting (train/valid) loop. Inteded to be used within callbacks."""
         self._keep_fit = False
 
     def _runCBS(self, name, *args):
