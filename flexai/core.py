@@ -1,3 +1,6 @@
+import os
+import torch
+
 class Learner():
     """
     A class that handles the training of a pytorch model with the specified parameters.
@@ -45,9 +48,12 @@ class Learner():
 
         Parameters
         ----------
-            epochs (int): The number of epochs to train/validate.
-            train (bool): If true, the model will be trained on dataloaders['train'], otherwise the model will not be trained.
-            valid (bool): If true, the model will be evaluated on dataloaders['valid'], otherwise the model will not be evaluated.
+            epochs: int 
+                The number of epochs to train/validate.
+            train: bool 
+                If true, the model will be trained on dataloaders['train'], otherwise the model will not be trained.
+            valid: bool
+                If true, the model will be evaluated on dataloaders['valid'], otherwise the model will not be evaluated.
         """
         phases = []
         if train: phases.append('train')
@@ -80,10 +86,57 @@ class Learner():
                 self._runCBS('after_epoch', phase)
             self._epoch += 1
         self._runCBS('after_fit')
-    
+
+    #TODO: consider adding a test method.
+
     def stop_fit_request(self):
         """Sends a request to the learner to stop it's fitting (train/valid) loop. Inteded to be used within callbacks."""
         self._keep_fit = False
+
+    def save_checkpoint(self, path):
+        """
+        Save a learner checkpoint, contatining model state dictionary (weights and biases), 
+        optimizer state dictonary (it's parameters), and the index of the current training epoch.
+
+        Parameters
+        ----------
+        path (str)
+            The path in which to save the checkpoint. If only a directory is indicated, the checkpoint 
+            is saved by the name checkpoint.pt 
+        """
+        path, file = os.path.split(path)
+        if path and not os.path.exists(path): 
+            os.makedirs(path)
+        if not file: 
+            file = 'checkpoint.pt'
+        checkpoint_state_dict = {
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'epoch': self.epoch,
+        }
+        torch.save(checkpoint_state_dict, os.path.join(path,file))
+
+    def load_checkpoint(self, path, weights_only=True):
+        """
+        Load a learner checkpoint from path.
+
+        Parameters
+        ----
+        path (str)
+            The path of the checkpoint to be loaded.
+        weights_only (bool)
+            Indicates whether unpickler should be restricted to loading only tensors, primitive types, 
+            dictionaries and any types added via torch.serialization.add_safe_globals(). default(True)
+        """
+        if not os.path.exists(path): raise FileNotFoundError(f'No such file: {path}')
+        if not os.path.isfile(path): raise IsADirectoryError(f'Is a directory: {path}')
+        checkpoint_state_dict = torch.load(path, weights_only=True)
+        model_state = checkpoint_state_dict['model_state_dict']
+        optimizer_state = checkpoint_state_dict['optimizer_state_dict']
+        epoch = checkpoint_state_dict['epoch']
+        self.model.load_state_dict(model_state)
+        self.optimizer.load_state_dict(optimizer_state)
+        self._epoch = epoch
 
     def _runCBS(self, name, *args):
         if self.cbs:
